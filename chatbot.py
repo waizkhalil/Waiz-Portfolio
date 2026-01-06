@@ -254,7 +254,12 @@ st.markdown(f'<div id="chatlog" class="chatbox-contents">{chat_html}</div>', uns
 
 # Input area (single)
 with st.form("waiz_form", clear_on_submit=True):
-    user_input = st.text_input("", placeholder="Ask something about Waiz...", label_visibility="collapsed", key="input_field")
+    user_input = st.text_input(
+    "Chat input",
+    placeholder="Ask something about Waiz...",
+    label_visibility="collapsed",
+    key="input_field"
+    )
     send_btn = st.form_submit_button("Send")
     clear_btn = st.form_submit_button("Clear")
     st.markdown("</div>", unsafe_allow_html=True)
@@ -294,6 +299,7 @@ if st.session_state.chat_history:
 
 # Footer
 st.markdown('<footer class="custom">Made with ❤️ by Waiz</footer></div>', unsafe_allow_html=True)
+
 
 
 
