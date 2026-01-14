@@ -5,15 +5,15 @@ from dotenv import load_dotenv
 from langchain_community.vectorstores import FAISS
 from langchain_community.document_loaders import PyMuPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
-from langchain_google_genai import ChatGoogleGenerativeAI
+from langchain_groq import ChatGroq
 from langchain_community.embeddings import HuggingFaceEmbeddings
 
 # ------------------ SETUP ------------------
 load_dotenv()
-GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
-if not GOOGLE_API_KEY:
-    raise RuntimeError("GOOGLE_API_KEY not found in .env")
-os.environ["GOOGLE_API_KEY"] = GOOGLE_API_KEY
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+if not GROQ_API_KEY:
+    raise RuntimeError("GROQ_API_KEY not found in .env")
+os.environ["GROQ_API_KEY"] = GROQ_API_KEY
 
 st.set_page_config(page_title="Waiz Khalil — Personal Chatbot", layout="wide")
 
@@ -146,11 +146,15 @@ st.markdown(
 # ------------------ MODELS (same logic) ------------------
 @st.cache_resource
 def init_models():
-    llm = ChatGoogleGenerativeAI(model="gemini-2.0-flash", temperature=0.7)
-    embedder = HuggingFaceEmbeddings(model_name="sentence-transformers/all-MiniLM-L6-v2")
+    llm = ChatGroq(
+        model="llama-3.1-8b-instant",
+        temperature=0.3,      # better factual RAG
+        max_tokens=700        # prevent overflow
+    )
+    embedder = HuggingFaceEmbeddings(
+        model_name="sentence-transformers/all-MiniLM-L6-v2"
+    )
     return llm, embedder
-
-llm, embedder = init_models()
 
 # ------------------ LOAD PDF & VECTORSTORE (same logic) ------------------
 PDF_PATH = "data/Resume.pdf"
@@ -182,7 +186,7 @@ def semantic_score(answer, references):
     except Exception:
         return 0.0
 
-def get_answer(query, chat_history=None, top_k=4):
+def get_answer(query, chat_history=None, top_k=3):
     docs = vectorstore.similarity_search(query, k=top_k)
     refs = [d.page_content for d in docs]
     context = "\n\n".join(refs)
@@ -211,7 +215,8 @@ Relevant Document Excerpts:
 Now, answer this question thoughtfully and conversationally:
 {query}
 """
-    answer = llm.invoke(prompt).content
+    response = llm.invoke(prompt)
+    answer = response.content if hasattr(response, "content") else str(response)
     score = semantic_score(answer, refs)
     return answer, score
 
@@ -291,6 +296,7 @@ if st.session_state.chat_history:
             try:
                 answer, score = get_answer(user_q, st.session_state.chat_history[:-1])
             except Exception as e:
+                st.error(f"Groq error: {e}")
                 answer = "Sorry — internal error when generating response."
             # update the last pair to include bot
             st.session_state.chat_history[-1] = {"user": user_q, "bot": answer}
