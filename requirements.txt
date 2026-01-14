@@ -6,8 +6,10 @@ numpy
 # LangChain and community integrations
 langchain
 langchain-community>=0.0.8
-langchain-google-genai>=0.0.9
 langchain-text-splitters
+
+# Groq LLM integration
+langchain-groq
 
 # Embeddings and vector stores
 faiss-cpu
